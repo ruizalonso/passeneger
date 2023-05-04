@@ -1,4 +1,5 @@
 import { ObjectId, isValidObjectId } from 'mongoose'
+import CryptoJS from 'crypto-js'
 import { connect, disconnect } from './conection'
 import { Entry } from '@/interfaces'
 import EntryModel from '@models/entries'
@@ -28,4 +29,24 @@ export const getEntryById = async (
   await disconnect()
   if (!entry) return null
   return JSON.parse(JSON.stringify(entry[0]))
+}
+
+export const encryptValue = async (value: string, key: string) => {
+  try {
+    if (value && key) {
+      return await CryptoJS.AES.encrypt(value, key).toString()
+    }
+  } catch (error) {
+    return error
+  }
+}
+
+export const decryptValue = async (value: string, key: string) => {
+  try {
+    if (value && key) {
+      return await CryptoJS.AES.decrypt(value, key).toString(CryptoJS.enc.Utf8)
+    }
+  } catch (error) {
+    return error
+  }
 }

@@ -1,12 +1,10 @@
 import { connect } from '@lib/conection'
 import EntryModel from '@/models/entries'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { encryptValue } from '@lib/entries'
 // import { withApiAuthRequired } from '@auth0/nextjs-auth0'
 
-const handler = async (
-  req: NextApiRequest,
-  res: NextApiResponse
-) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { method } = req
 
   await connect()
@@ -24,6 +22,11 @@ const handler = async (
       break
     case 'POST':
       try {
+        const encryptedValue = await encryptValue(
+          req.body.entryValue,
+          req.body.encriptionKey
+        )
+        req.body.entryValue = encryptedValue
         const entries = new EntryModel(req.body)
         await entries.save()
 

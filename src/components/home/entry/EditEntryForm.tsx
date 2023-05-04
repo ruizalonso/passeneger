@@ -1,17 +1,21 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react'
+import React, { useState, Fragment, useRef, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import ButtonIcon from '@common/Button'
+import Button from '@common/Button'
+import { ToastContainer } from 'react-toastify'
 import { NextPage } from 'next'
 import { Entry } from '@/interfaces'
 import { mutate } from 'swr'
 import { EntryProps } from '@/index'
 import useNotification from '@hooks/useNotify'
+import useModal from '@hooks/useModal'
+import Modal from '@common/Modal'
 
 const EditEntryForm: NextPage<EntryProps> = ({ entry, edit }) => {
   const [notification, showNotification] = useNotification()
-
+  const [valueDecripted, setvalueDecripted] = useState('')
+  const { isOpen, toggle } = useModal()
   const router = useRouter()
   const { _id } = router.query
   const contentType = 'application/json'
@@ -22,8 +26,8 @@ const EditEntryForm: NextPage<EntryProps> = ({ entry, edit }) => {
     entryName: entry.entryName,
     entryDescription: entry.entryDescription,
     entryValue: entry.entryValue,
+    encriptionKey: '',
   })
-
   const postData = async (formData: Entry) => {
     try {
       const res = await fetch(`/api/entry`, {
@@ -34,8 +38,6 @@ const EditEntryForm: NextPage<EntryProps> = ({ entry, edit }) => {
         },
         body: JSON.stringify(formData),
       })
-
-      // Throw error with status code in case Fetch API req failed
       if (!res.ok) {
         showNotification({
           variant: 'error',
@@ -86,11 +88,33 @@ const EditEntryForm: NextPage<EntryProps> = ({ entry, edit }) => {
         variant: 'error',
         message: 'error message',
       })
-      // setMessage('Failed to update pet')
-      // console.log('error hjfghjgfhjgfjhfgjh', error)
     }
   }
 
+  const validateKey = async (key: string) => {
+    try {
+      const res = await fetch(`/api/entry/validate`, {
+        method: 'POST',
+        headers: {
+          Accept: contentType,
+          'Content-Type': contentType,
+        },
+        body: JSON.stringify({ key, entryValue: entry.entryValue }),
+      })
+      if (!res.ok) {
+        throw new Error("Key don't match")
+      }
+      const { data } = await res.json()
+      setvalueDecripted(data)
+      toggle()
+      mutate(`/api/entry/${_id}`, data, false)
+    } catch (error: any) {
+      showNotification({
+        variant: 'error',
+        message: error.message,
+      })
+    }
+  }
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -112,7 +136,12 @@ const EditEntryForm: NextPage<EntryProps> = ({ entry, edit }) => {
       postData(form)
     }
   }
-
+  const handleDecryptValue = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (isOpen) {
+      validateKey(form.encriptionKey)
+    }
+  }
   const nameProps = {
     className: 'input input-bordered w-full max-w-xs',
     id: 'name',
@@ -131,7 +160,29 @@ const EditEntryForm: NextPage<EntryProps> = ({ entry, edit }) => {
     name: 'entryValue',
     autoComplete: 'off',
     required: true,
+    disabled: (edit) ? true : false,
+    value: valueDecripted ? valueDecripted : undefined,
     placeholder: 'Entry value',
+    onChange: handleChange,
+  }
+  const keyProps = {
+    className: 'input input-bordered input-warning w-full max-w-xs',
+    id: 'key',
+    type: 'text',
+    name: 'encriptionKey',
+    autoComplete: 'off',
+    required: true,
+    placeholder: 'Encription key',
+    onChange: handleChange,
+  }
+  const setKeyProps = {
+    className: 'input input-bordered input-warning w-full',
+    id: 'key',
+    type: 'text',
+    name: 'encriptionKey',
+    autoComplete: 'off',
+    required: true,
+    placeholder: 'Type your key here',
     onChange: handleChange,
   }
   const descriptionProps = {
@@ -145,33 +196,81 @@ const EditEntryForm: NextPage<EntryProps> = ({ entry, edit }) => {
     onChange: handleChange,
   }
   return (
-    <form className="mx-auto mt-16 max-w-xl sm:mt-20" onSubmit={handleSubmit}>
-      <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
-        <div className="form-control my-2">
-          <label htmlFor="name" className="label">
-            Name
-          </label>
-          <input {...nameProps} />
+    <>
+      <form className="mx-auto mt-16 max-w-xl sm:mt-20" onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+          <div className="form-control my-2">
+            <label htmlFor="name" className="label">
+              Name
+            </label>
+            <input {...nameProps} />
+          </div>
+          {!edit && (
+            <div className="form-control my-2">
+              <label htmlFor="value" className="label">
+                Value
+              </label>
+              <input {...valueProps} />
+            </div>
+          )}
+          {edit && valueDecripted === '' && (
+            <div className="form-control my-2">
+              <label htmlFor="value" className="label">
+                Value
+              </label>
+              <label htmlFor="customModal" className="btn" onClick={toggle}>
+                Decrypt value
+              </label>
+            </div>
+          )}
+          {edit && valueDecripted != '' && (
+            <div className="form-control my-2">
+              <label htmlFor="value" className="label">
+                Value
+              </label>
+              <input {...valueProps} />
+            </div>
+          )}
+          {!edit && (
+            <div className="form-control my-2">
+              <label htmlFor="key" className="label">
+                Key
+              </label>
+              <input {...keyProps} />
+            </div>
+          )}
+          <div className="form-control my-2">
+            <label htmlFor="description" className="label">
+              Description
+            </label>
+            <textarea {...descriptionProps} />
+          </div>
         </div>
-        <div className="form-control my-2">
-          <label htmlFor="value" className="label">
-            Value
-          </label>
-          <input {...valueProps} />
+        <div className="mt-10">
+          <Button buttonType="button" type="primary" hfref="" isLarge={true}>
+            {edit ? 'Update' : 'Save'}
+          </Button>
         </div>
-        <div className="form-control my-2">
-          <label htmlFor="description" className="label">
-            Description
-          </label>
-          <textarea {...descriptionProps} />
-        </div>
-      </div>
-      <div className="mt-10">
-        <ButtonIcon buttonType="button" type="primary" hfref="" isLarge={true}>
-          {edit ? 'Update' : 'Save'}
-        </ButtonIcon>
-      </div>
-    </form>
+      </form>
+      <Modal
+        isOpen={isOpen}
+        toggle={toggle}
+        title={'Type the key to ' + form.entryName}
+        description="Is the key you used to save this value"
+      >
+        <form onSubmit={handleDecryptValue}>
+          <div className="form-control my-1">
+            <input {...setKeyProps} />
+          </div>
+          <div className="flex justify-end mt-3">
+            <Button buttonType="button" type="accent" hfref="" size="sm">
+              Show
+            </Button>
+          </div>
+        </form>
+      </Modal>
+      <ToastContainer />
+    </>
   )
 }
 
