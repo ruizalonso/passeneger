@@ -6,6 +6,7 @@ export interface Entry {
   entryName: string
   entryDescription: string
   entryValue: string
+  encriptionKey: string
 }
 
 export interface User {

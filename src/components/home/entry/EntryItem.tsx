@@ -4,7 +4,7 @@ import Button from '@common/Button'
 import { Entry } from '@/interfaces'
 import { useRouter } from 'next/router'
 
-function EntryItem({ _id, entryName, entryDescription, entryValue }: Entry) {
+function EntryItem({ _id, entryName, entryDescription }: Entry) {
   const router = useRouter()
   const contentType = 'application/json'
 
@@ -27,17 +27,6 @@ function EntryItem({ _id, entryName, entryDescription, entryValue }: Entry) {
       <th>🔵</th>
       <td>{entryName}</td>
       <td>{entryDescription ? entryDescription : 'None'}</td>
-      <td>
-        <Button
-          buttonType="button"
-          type="success"
-          hfref="/entry/25"
-          isOutline={true}
-          size="xs"
-        >
-          {entryValue}
-        </Button>
-      </td>
       <td>
         <Button
           buttonType="link"

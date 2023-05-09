@@ -14,7 +14,7 @@ type ButtonType = {
     | 'error'
     | 'btn'
   buttonType: 'link' | 'button'
-  hfref: string
+  hfref?: string
   isLarge?: boolean
   isOutline?: boolean
   size?: 'xs' | 'sm' | 'lg'
@@ -56,7 +56,7 @@ function Button({
   return (
     <>
       {buttonType == 'link' && (
-        <Link href={hfref} className={classButton} passHref>
+        <Link href={hfref || '/'} className={classButton} passHref>
           {children}
         </Link>
       )}
